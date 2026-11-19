@@ -1,25 +1,48 @@
-# Agent Replay Fixtures
+# Python LLM Agent Record/Replay Test Fixtures
 
-Record normalized model and tool-boundary events as local JSON fixtures, redact common credentials before writing, and replay traces without contacting a provider. A missing fixture raises an error; replay has no live-call fallback.
+Run deterministic, offline regression tests for LLM agents and tool-using applications. This Python library records normalized model and tool-boundary events as local JSON fixtures, redacts common credentials before storage, and replays a trace without contacting a provider. A missing fixture raises an error; there is no live-call fallback.
 
-## Install
+## Install from source
 
-Install the package with pip install . from this directory. It uses only the Python standard library and supports Python 3.11 or newer.
+Requires Python 3.11 or newer. Clone the repository and install the local package:
 
-## Record and replay
+```sh
+git clone https://github.com/buxerr/agent-replay-fixtures.git
+cd agent-replay-fixtures
+python -m pip install .
+```
 
-TraceRecorder.record(request, events) stores an immutable fixture addressed by the SHA-256 of the redacted request. Each event has exactly two fields: kind and payload. Typical kinds include model.request, model.response, tool.call, tool.result, and stream.chunk.
+## Record and replay a trace
 
-ReplayTransport.open(request) returns a ReplaySession. Consume events in order with next_event(), optionally checking the expected kind, and call assert_exhausted() at the end of a test. Event mismatches do not advance the trace.
+Each event has a `kind` and `payload`. Common kinds include `model.request`, `model.response`, `tool.call`, `tool.result`, and `stream.chunk`.
 
-The recorder redacts credential-shaped object fields, common bearer strings, and recognizable provider tokens before both request hashing and persistence. Configure additional secret field names with SecretRedactor(extra_fields={...}). Inspect fixtures before committing them; custom credentials can use formats the default rules do not recognize.
+```python
+from agent_replay import ReplayTransport, TraceRecorder
 
-## Test
+request = {"model": "example", "messages": [{"role": "user", "content": "Hi"}]}
+events = [{"kind": "model.response", "payload": {"text": "Hello"}}]
 
-Run python -m unittest discover -s tests -v.
+fixtures = "tests/fixtures"
+TraceRecorder(fixtures).record(request, events)
 
-## Scope
+session = ReplayTransport(fixtures).open(request)
+response = session.next_event("model.response")
+assert response["payload"]["text"] == "Hello"
+session.assert_exhausted()
+```
 
-This package provides storage, redaction, integrity checks, and deterministic replay primitives. SDK adapters, provider-specific stream normalization, fixture curation, and encrypted fixture storage are not included yet. Never use production traces as fixtures without reviewing the redacted output.
+`TraceRecorder.record` writes an immutable fixture addressed by the SHA-256 of the redacted request. `ReplayTransport.open` matches that request and returns a `ReplaySession`. An event-kind mismatch does not advance the trace.
 
-MIT licensed. See LICENSE.
+## Redaction and fixture safety
+
+The default redactor recognizes credential-shaped object fields, common bearer strings, and several provider token formats. Add field names with `SecretRedactor(extra_fields={"customer_secret"})`. Review generated fixtures before committing them: custom credentials may use formats the default rules do not recognize, and redaction is not encryption.
+
+Run the unit suite with `python -m unittest discover -s tests -v`.
+
+## Scope and limitations
+
+The package provides fixture storage, redaction, integrity checks, and deterministic replay primitives. It does not include SDK adapters, provider-specific stream normalization, fixture curation, or encrypted fixture storage. Connect it to the model and tool boundaries in your own test harness.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
