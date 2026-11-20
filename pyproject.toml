@@ -1,15 +1,23 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-replay-fixtures"
 version = "0.1.0"
-description = "Offline, redacted fixtures for deterministic agent regression tests."
+description = "Record redacted LLM agent tool-call fixtures and replay them offline in deterministic regression tests."
+readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["llm-agent-testing", "agent-replay", "offline-fixtures", "tool-calling", "redaction", "deterministic-tests"]
 authors = [{ name = "Niko Filipic" }]
 dependencies = []
+
+[project.urls]
+Repository = "https://github.com/buxerr/agent-replay-fixtures"
+Issues = "https://github.com/buxerr/agent-replay-fixtures/issues"
+Changelog = "https://github.com/buxerr/agent-replay-fixtures/releases"
 
 [tool.setuptools]
 packages = ["agent_replay"]
